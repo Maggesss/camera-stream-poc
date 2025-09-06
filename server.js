@@ -15,16 +15,10 @@ function listCameras() {
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        if (line.includes('(video)')) {
-            const matchName = line.match(/"(.+?)"/);
-            if (matchName) {
-                const camera = { name: matchName[1], alt: null };
-                if (i + 1 < lines.length) {
-                    const altMatch = lines[i + 1].match(/Alternative name "(.+?)"/);
-                    if (altMatch) camera.alt = altMatch[1];
-                }
-                cameras.push(camera);
-            }
+        if (line.includes("(video)")) {
+            const name = line.match(/"(.+?)"/)?.[1];
+            const alt = lines[i + 1]?.match(/Alternative name "(.+?)"/)?.[1] || null;
+            if (name) cameras.push({ name, alt });
         }
     }
     return cameras;
@@ -37,7 +31,7 @@ app.get("/cameras", (req, res) => {
 });
 
 // Express-Server starten
-app.listen(3000, () => console.log("HTTP server running on http://localhost:3000"));
+app.listen(8080, () => console.log("🌐 HTTP server running on http://localhost:8080"));
 
 // Kamera-Streams per WebSocket
 function setupCameraStream(camera, wsPort) {
@@ -66,10 +60,10 @@ function setupCameraStream(camera, wsPort) {
             }
         });
 
-        ffmpeg.stderr.on("data", data => console.error(`[FFmpeg ${camera.name}]`, data.toString()));
+        ffmpeg.stderr.on("data", data => console.error(`🎬 [FFmpeg ${camera.name}]`, data.toString()));
 
         ffmpeg.on("close", code => {
-            console.log(`FFmpeg for ${camera.name} exited with code ${code}`);
+            console.log(`❌ FFmpeg for "${camera.name}" exited with code ${code}`);
             ffmpeg = null;
         });
     }
@@ -77,22 +71,23 @@ function setupCameraStream(camera, wsPort) {
     function stopFFmpeg() {
         if (ffmpeg && clients.size === 0) {
             ffmpeg.kill("SIGINT");
+            console.log(`🛑 FFmpeg for "${camera.name}" stopped`);
         }
     }
 
     wss.on("connection", ws => {
         clients.add(ws);
-        console.log(`Client connected to camera "${camera.name}"`);
+        console.log(`👤 Client connected to "${camera.name}"`);
         startFFmpeg();
 
         ws.on("close", () => {
             clients.delete(ws);
-            console.log(`Client disconnected from camera "${camera.name}"`);
+            console.log(`🚪 Client disconnected from "${camera.name}"`);
             stopFFmpeg();
         });
     });
 
-    console.log(`🎥 Camera "${camera.name}" WebSocket ready on ws://localhost:${wsPort}`);
+    console.log(`🔗 Camera "${camera.name}" WebSocket ready on ws://localhost:${wsPort}`);
 }
 
 // Kamera-Streams einrichten
