@@ -43,7 +43,7 @@ cameras.forEach(({ name, alt }, i) => {
         const ffmpeg = spawn("ffmpeg", [
             "-f", "dshow",
             "-i", `video=${input}`,
-            "-vf", "scale=248:248,format=gray",
+            "-vf", "crop='min(iw,ih)':'min(iw,ih)':'(iw-min(iw,ih))/2':'(ih-min(iw,ih))/2',format=gray",
             "-r", "60",
             "-f", "mjpeg",
             "pipe:1"
